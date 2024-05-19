@@ -1,0 +1,20 @@
+{
+    "connectionsMonitorChannelID": "1232",
+    "insultUserName": "someUser",
+    "discordBotToken": "dfhslkdf",
+    "giphyApiKey": "someAPIKEY",
+    "tenorApiKey": false,
+    "userToNameMap": {
+        "someUser": "Name"
+    },
+    "postgres": {
+        "password": "asdas",
+        "database": "asd",
+        "user": "asds",
+        "host": "postgres-host",
+        "port": 5432
+    },
+    "footerMessage": "Brought to you by ...",
+    "guildId": "2309252",
+    "applicationId": "23425"
+}

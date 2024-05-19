@@ -1,0 +1,6 @@
+config/dev.json
+config/prod.json
+release.sh
+persistance.yaml
+node_modules
+coverage

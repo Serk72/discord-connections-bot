@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "dependencies": {
+    "ascii-table": "0.0.9",
+    "config": "3.3.11",
+    "dayjs": "1.11.10",
+    "discord.js": "14.14.1",
+    "ml-regression": "5.0.0",
+    "node-fetch-native": "1.6.4",
+    "pg": "8.11.4"
+  },
+  "devDependencies": {
+    "eslint": "8.57.0",
+    "eslint-config-google": "0.14.0",
+    "jest": "29.7.0",
+    "pre-commit": "1.2.2"
+  },
+  "scripts": {
+    "local": "NODE_ENV=dev node start.js",
+    "start": "node start.js",
+    "lint": "npx eslint --ext .js .",
+    "test": "jest --coverage"
+  },
+  "pre-commit": [
+    "lint",
+    "test"
+  ]
+}

@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discord-connections
+  labels:
+    app: discord-connections
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discord-connections
+  template:
+    metadata:
+      labels:
+        app: discord-connections
+    spec:
+      containers:
+        - name: discord-connections
+          env:
+          - name: TZ
+            value: US/Eastern
+          - name: NODE_ENV
+            value: "prod"
+          image: "{{ .Values.image.repository}}:{{ .Values.image.tag }}"
+          workingDir: /workdir/discord-connections
+          imagePullPolicy: IfNotPresent
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          {{- if .Values.existingClaimName }}
+          volumeMounts:
+            - name: discord-connections-pvc
+              mountPath: '/workdir'
+          {{- end }}
+          command:
+            - npm
+            - run
+            - start
+      restartPolicy: Always
+      dnsPolicy: ClusterFirstWithHostNet
+      enableServiceLinks: true
+      nodeSelector:
+        kubernetes.io/hostname: home-server
+      {{- if .Values.existingClaimName }}
+      volumes:
+        - name: discord-connections-pvc
+          persistentVolumeClaim:
+            claimName: {{.Values.existingClaimName}}
+      {{- end }}
+      
