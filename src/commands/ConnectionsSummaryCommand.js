@@ -104,24 +104,62 @@ class ConnectionSummaryCommand {
       this.connectionGame.getLatestGame(),
     ]);
 
-    const [latestGame, latestScores] = await Promise.all([
+    const [latestGame, overallSummary, day7Summary, latestScores] = await Promise.all([
       this.connectionGame.getConnectionGame(latestGameNumber),
+      this.connectionScore.getPlayerSummaries(guildId, channelId),
+      this.connectionScore.getLast7DaysSummaries(guildId, channelId),
       this.connectionScore.getPlayerInfoForGame(latestGameNumber, guildId, channelId),
     ]);
     let imageToSend = this.getImage(latestGame);
+    const sum7dayByUser = day7Summary.reduce((acc, sum) => {
+      acc[sum.username] = sum;
+      return acc;
+    }, {});
     const summaryTable = new AsciiTable('Connections Summary');
-    summaryTable.setHeading('User', '1', '2', '3', '4');
-    latestScores.forEach((row) => {
+    summaryTable.setHeading('User', 'GP', 'AS', '7DA');
+    overallSummary.forEach((row) => {
+      const totalGames = +row.games;
+      const day7Summary = {
+        gamesPlayed: '',
+        average: '',
+        gamesLost: '',
+      };
+      if (sum7dayByUser[row.username]) {
+        day7Summary.gamesPlayed = sum7dayByUser[row.username].games;
+        day7Summary.average = sum7dayByUser[row.username].average;
+        day7Summary.gamesLost = sum7dayByUser[row.username].gameslost;
+      }
       summaryTable.addRow(
           USER_TO_NAME_MAP[row.username] || row.username,
-          row.completedcategory1 ? '✅' : '🟥',
-          row.completedcategory2 ? '✅' : '🟥',
-          row.completedcategory3 ? '✅' : '🟥',
-          row.completedcategory4 ? '✅' : '🟥');
+          totalGames,
+          row.average,
+          day7Summary.average);
     });
+
+    const overallLeaderIndex = overallSummary?.[0]?.username === 'Connections Bot' ? 1 : 0;
+    const day7LeaderIndex = day7Summary?.[0]?.username === 'Connections Bot' ? 1 : 0;
+
+    let highestScore = 0;
+    const todayByScore = latestScores.reduce((acc, scoreVal) => {
+      if (scoreVal.username === 'Connections Bot') {
+        return acc;
+      }
+      if (highestScore < +scoreVal.score) {
+        highestScore = +scoreVal.score;
+      }
+      if (!acc[+scoreVal.score]?.length) {
+        acc[+scoreVal.score] = [USER_TO_NAME_MAP[scoreVal.username] || scoreVal.username];
+      } else {
+        acc[+scoreVal.score].push(USER_TO_NAME_MAP[scoreVal.username] || scoreVal.username);
+      }
+      return acc;
+    }, {});
 
     const messageToSend = `\`\`\`
 ${summaryTable.toString()}\`\`\`
+***Overall Leader: ${USER_TO_NAME_MAP[overallSummary?.[overallLeaderIndex]?.username] || overallSummary?.[overallLeaderIndex]?.username}***
+**7 Day Leader: ${USER_TO_NAME_MAP[day7Summary?.[day7LeaderIndex]?.username] || day7Summary?.[day7LeaderIndex]?.username}**
+**Today's Winners: ${todayByScore[highestScore]?.join(', ')}**
     ${FOOTER_MESSAGE ? `*${FOOTER_MESSAGE}*`: ''}`;
     imageToSend = await imageToSend;
     if (interaction) {

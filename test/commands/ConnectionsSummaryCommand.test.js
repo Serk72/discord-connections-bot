@@ -48,13 +48,16 @@ describe('SummaryCommand Tests', () => {
     const mockedInteraction = {followUp: jest.fn().mockResolvedValue(), deferReply: jest.fn().mockResolvedValue()};
     await summaryCommand.execute(mockedInteraction);
     expect(mockedInteraction.followUp).toBeCalledWith(`\`\`\`
-.-------------------------.
-|   Connections Summary   |
-|-------------------------|
-| User | 1 | 2  | 3  | 4  |
-|------|---|----|----|----|
-| test | ✅ | 🟥 | 🟥 | 🟥 |
-'-------------------------'\`\`\`
+.----------------------.
+| Connections Summary  |
+|----------------------|
+| User | GP | AS | 7DA |
+|------|----|----|-----|
+| test |  1 | 7  |     |
+'----------------------'\`\`\`
+***Overall Leader: test***
+**7 Day Leader: undefined**
+**Today's Winners: undefined**
     *Brought to you by ...*`);
   });
 
@@ -67,13 +70,16 @@ describe('SummaryCommand Tests', () => {
     }]);
     await summaryCommand.execute(null, mockedDiscordChannel);
     expect(mockedDiscordChannel.send).toBeCalledWith(`\`\`\`
-.-------------------------.
-|   Connections Summary   |
-|-------------------------|
-| User | 1 | 2  | 3  | 4  |
-|------|---|----|----|----|
-| test | ✅ | 🟥 | 🟥 | 🟥 |
-'-------------------------'\`\`\`
+.----------------------.
+| Connections Summary  |
+|----------------------|
+| User | GP | AS | 7DA |
+|------|----|----|-----|
+| test |  1 | 7  |     |
+'----------------------'\`\`\`
+***Overall Leader: test***
+**7 Day Leader: undefined**
+**Today's Winners: undefined**
     *Brought to you by ...*`);
   });
 
@@ -89,13 +95,16 @@ describe('SummaryCommand Tests', () => {
     });
     await summaryCommand.execute(null, mockedDiscordChannel);
     expect(mockedDiscordChannel.send).toBeCalledWith({content: `\`\`\`
-.-------------------------.
-|   Connections Summary   |
-|-------------------------|
-| User | 1 | 2  | 3  | 4  |
-|------|---|----|----|----|
-| test | ✅ | 🟥 | 🟥 | 🟥 |
-'-------------------------'\`\`\`
+.----------------------.
+| Connections Summary  |
+|----------------------|
+| User | GP | AS | 7DA |
+|------|----|----|-----|
+| test |  1 | 7  |     |
+'----------------------'\`\`\`
+***Overall Leader: test***
+**7 Day Leader: undefined**
+**Today's Winners: undefined**
     *Brought to you by ...*`, files: [{attachment: 'someUrl', name: 'SPOILER_FILE.gif'}]});
   });
   test('summary with results Channel with giphy link error', async () => {
@@ -111,13 +120,16 @@ describe('SummaryCommand Tests', () => {
     });
     await summaryCommand.execute(null, mockedDiscordChannel);
     expect(mockedDiscordChannel.send).toBeCalledWith(`\`\`\`
-.-------------------------.
-|   Connections Summary   |
-|-------------------------|
-| User | 1 | 2  | 3  | 4  |
-|------|---|----|----|----|
-| test | ✅ | 🟥 | 🟥 | 🟥 |
-'-------------------------'\`\`\`
+.----------------------.
+| Connections Summary  |
+|----------------------|
+| User | GP | AS | 7DA |
+|------|----|----|-----|
+| test |  1 | 7  |     |
+'----------------------'\`\`\`
+***Overall Leader: test***
+**7 Day Leader: undefined**
+**Today's Winners: undefined**
     *Brought to you by ...*`);
   });
 
