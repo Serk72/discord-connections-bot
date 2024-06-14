@@ -37,6 +37,7 @@ class ConnectionGame {
       Category3 VARCHAR (255),
       Category4 VARCHAR (255),
       JsonGameInfo JSONB,
+      aiMessages JSONB,
       SummaryPosted BOOLEAN,
       Date TIMESTAMP);`;
     this.pool.query(tablesSQL, (err, res) => {
@@ -67,12 +68,41 @@ class ConnectionGame {
   }
 
   /**
+   * Stores the messages for an AI game play
+   * @param {*} connectionGame game number to look up.
+   * @param {*} messages message array for the game.
+   */
+  async storeAIPlay(connectionGame, messages) {
+    await this.pool.query(`UPDATE ConnectionGame SET aiMessages = $1 WHERE ConnectionGame = $2`,
+        [{messages}, connectionGame]);
+  }
+
+  /**
    * Finds the latest game recorded in the database.
    * @return {*} the latest game recorded in the database.
    */
   async getLatestGame() {
     const results = await this.pool.query('SELECT * FROM ConnectionGame ORDER BY ConnectionGame DESC LIMIT 1', []);
     return results?.rows?.[0]?.connectiongame;
+  }
+
+  /**
+   * Gets all past game json info
+   * @param {number} gameToExclude number to exclude from results.
+   * @return {*} Gets all past game json info
+   */
+  async getAllPastGamesJSON(gameToExclude) {
+    const results = await this.pool.query('SELECT JsonGameInfo FROM ConnectionGame WHERE ConnectionGame != $1 ORDER BY ConnectionGame DESC', [gameToExclude]);
+    return results?.rows.map((row) => row.jsongameinfo);
+  }
+
+  /**
+   * Gets latest game json info.
+   * @return {*} Gets latest game json info.
+   */
+  async getLatestGamesJSON() {
+    const results = await this.pool.query('SELECT JsonGameInfo FROM ConnectionGame ORDER BY ConnectionGame DESC LIMIT 1', []);
+    return results?.rows?.[0]?.jsongameinfo;
   }
 
   /**

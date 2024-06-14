@@ -14,6 +14,13 @@
         "host": "postgres-host",
         "port": 5432
     },
+    "ollama": {
+        "host": "sdfsdf",
+        "port": 2342453,
+        "generatedModelName": "sdfsd",
+        "modelName": "Connections",
+        "generateModel": false
+    },
     "footerMessage": "Brought to you by ...",
     "guildId": "2309252",
     "applicationId": "23425"

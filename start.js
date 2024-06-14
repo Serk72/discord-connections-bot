@@ -2,6 +2,8 @@ const {Client, GatewayIntentBits, Events, Routes, REST} = require('discord.js');
 const {ConnectionsBotClient} = require('./src/ConnectionsBotClient');
 const {ConnectionsSummaryCommand} = require('./src/commands');
 const {ConnectionGame} = require('./src/data/ConnectionGame');
+// const {ConnectionScore} = require('./src/data/ConnectionScore');
+// ConnectionScore.getInstance().reprocessScores()
 
 const client = new Client({intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildVoiceStates, GatewayIntentBits.MessageContent]});
 const config = require('config');
