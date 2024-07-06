@@ -1,5 +1,10 @@
 const {Pool} = require('pg');
 const config = require('config');
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ConnectionScore.js',
+  level: config.get('logLevel'),
+});
 const DATABASE_CONFIG = config.get('postgres');
 /**
  * Data Access layer for the ConnectionScore Table.
@@ -46,12 +51,12 @@ class ConnectionScore {
       Date TIMESTAMP);`;
     this.pool.query(tablesSQL, [], (err, res) => {
       if (err) {
-        console.error(err);
+        logger.error(err);
         return;
       }
     });
     this.pool.on('error', (err, client) => {
-      console.error('Unexpected error on idle client', err);
+      logger.error(`Unexpected error on idle client ${err}`);
       process.exit(-1);
     });
   }
@@ -103,11 +108,11 @@ class ConnectionScore {
    */
   async reprocessScores() {
     const scores = await this.getAllScores();
-    console.log(`processing ${scores.length} scores.`);
+    logger.info(`processing ${scores.length} scores.`);
     await Promise.all(scores.map((score) => {
       return this.updateScore(score.id, score.message.replaceAll('\\n', '\n'));
     }));
-    console.log(`finished processing.`);
+    logger.info(`finished processing.`);
   }
 
   /**

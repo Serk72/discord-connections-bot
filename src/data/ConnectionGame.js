@@ -1,5 +1,10 @@
 const {Pool} = require('pg');
 const config = require('config');
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ConnectionGame.js',
+  level: config.get('logLevel'),
+});
 const DATABASE_CONFIG = config.get('postgres');
 /**
  * Data Access Layer for the ConnectionGame Table
@@ -42,12 +47,12 @@ class ConnectionGame {
       Date TIMESTAMP);`;
     this.pool.query(tablesSQL, (err, res) => {
       if (err) {
-        console.error(err);
+        logger.error(err);
         return;
       }
     });
     this.pool.on('error', (err, client) => {
-      console.error('Unexpected error on idle client', err);
+      logger.error(`Unexpected error on idle client ${JSON.stringify(err)}`);
       process.exit(-1);
     });
   }
@@ -62,7 +67,7 @@ class ConnectionGame {
       const results = await this.pool.query('SELECT * FROM ConnectionGame WHERE ConnectionGame = $1', [connectionGame]);
       return results?.rows?.[0];
     } catch (ex) {
-      console.log(ex);
+      logger.error(ex);
       throw ex;
     }
   }

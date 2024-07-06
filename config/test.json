@@ -1,6 +1,7 @@
 {
     "connectionsMonitorChannelID": "1232",
     "insultUserName": "someUser",
+    "insultUserId": "someName",
     "discordBotToken": "dfhslkdf",
     "giphyApiKey": "someAPIKEY",
     "tenorApiKey": false,
@@ -15,6 +16,7 @@
         "port": 5432
     },
     "ollama": {
+        "generateMessages": false,
         "host": "sdfsdf",
         "port": 2342453,
         "generatedModelName": "sdfsd",

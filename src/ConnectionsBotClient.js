@@ -1,9 +1,14 @@
 const config = require('config');
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ConnectionBotClient.js',
+  level: config.get('logLevel'),
+});
 const dayjs = require('dayjs');
 const fetch = require('node-fetch-native');
 const {ConnectionGame} = require('./data/ConnectionGame');
 const {ConnectionScore} = require('./data/ConnectionScore');
-const {ConnectionsSummaryCommand, ConnectionsWhoLeftCommand} = require('./commands');
+const {ConnectionsSummaryCommand, ConnectionsWhoLeftCommand, PlayConnectionsCommand} = require('./commands');
 
 
 const INSULT_USERNAME = config.get('insultUserName');
@@ -20,6 +25,7 @@ class ConnectionsBotClient {
     this.connectionScore = ConnectionScore.getInstance();
     this.summaryCommand = ConnectionsSummaryCommand.getInstance();
     this.whoLeftCommand = ConnectionsWhoLeftCommand.getInstance();
+    this.playConnectionsGame = PlayConnectionsCommand.getInstance();
   }
 
   /**
@@ -50,7 +56,7 @@ class ConnectionsBotClient {
       const totalPlayes = await this.connectionScore.getTotalPlayers(guildId, channelId);
       const gamePlayers = await this.connectionScore.getPlayersForGame(latestGame, guildId, channelId);
       const remaining = totalPlayes.filter((player) => !gamePlayers.includes(player));
-      console.log(remaining);
+      logger.info(`Remaining players: ${remaining}`);
       if (!remaining.length) {
         await this.summaryCommand.execute(null, message.channel);
       } else if (remaining.length === 1) {
@@ -61,20 +67,21 @@ class ConnectionsBotClient {
     }
 
     const currentGame = await this.connectionGame.getConnectionGame(latestGame);
-    if (!currentGame?.word || currentGame.word.trim() === '') {
+    if (!currentGame?.jsongameinfo) {
       const day = dayjs().format('YYYY-MM-DD');
       const url = `https://www.nytimes.com/svc/connections/v2/${day}.json`;
       const solution = await fetch(url, {method: 'Get'})
           .then((res) => res?.json())
           .catch((ex) => {
-            console.error(ex);
+            logger.error(ex);
             return null;
           });
       if (solution?.categories && solution?.categories?.length === 4) {
         await this.connectionGame.addGameInfo(connectionsNumber, solution);
+        await this.playConnectionsGame.execute(null, message.channel);
       } else {
-        console.error('Unable to get solution');
-        console.error(solution);
+        logger.error('Unable to get solution');
+        logger.error(solution);
       }
     }
   }
@@ -84,9 +91,9 @@ class ConnectionsBotClient {
    * @param {*} newMessage The discord message after the edit.
    */
   async editEvent(oldMessage, newMessage) {
-    console.log('edit Event.');
-    console.log(oldMessage?.content);
-    console.log(newMessage?.content);
+    logger.info('edit Event.');
+    logger.info(oldMessage?.content);
+    logger.info(newMessage?.content);
     const guildId = newMessage.channel.guildId;
     const channelId = newMessage.channel.id;
     const found = newMessage?.content?.match(CONNECTIONS_REGEX);
@@ -108,6 +115,7 @@ class ConnectionsBotClient {
    * @return {*}
    */
   async messageHandler(message) {
+    logger.info(message);
     if (message.content.startsWith(`!${this.whoLeftCommand.data.name}`) || message.content.startsWith(`/${this.whoLeftCommand.data.name}`)) {
       message.delete();
       await this.whoLeftCommand.execute(null, message.channel);
@@ -116,6 +124,11 @@ class ConnectionsBotClient {
     if (message.content.startsWith(`!${this.summaryCommand.data.name}`) || message.content.startsWith(`/${this.summaryCommand.data.name}`)) {
       message.delete();
       await this.summaryCommand.execute(null, message.channel);
+      return;
+    }
+    if (message.content.startsWith(`!${this.playConnectionsGame.data.name}`) || message.content.startsWith(`/${this.playConnectionsGame.data.name}`)) {
+      message.delete();
+      await this.playConnectionsGame.execute(null, message.channel);
       return;
     }
     const found = message?.content?.match(CONNECTIONS_REGEX);

@@ -4,7 +4,11 @@ const fetch = require('node-fetch-native');
 const {ConnectionGame} = require('../data/ConnectionGame');
 const AsciiTable = require('ascii-table');
 const config = require('config');
-
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ConnectionSummaryCommand.js',
+  level: config.get('logLevel'),
+});
 const FOOTER_MESSAGE = config.get('footerMessage');
 const USER_TO_NAME_MAP = config.get('userToNameMap');
 
@@ -49,14 +53,14 @@ class ConnectionSummaryCommand {
         const response = await fetch(url, {method: 'Get'})
             .then((res) => res?.json())
             .catch((ex) => {
-              console.error(ex);
+              logger.error(ex);
               return null;
             });
         if (response?.results?.[0]?.media_formats?.gif?.url) {
           imageToSend = response?.results?.[0]?.media_formats?.gif?.url;
         } else {
-          console.error('Giphy Invalid Response.');
-          console.error(response);
+          logger.error('Giphy Invalid Response.');
+          logger.error(response);
         }
       } else {
         const giphyApiKey = config.get('giphyApiKey');
@@ -65,15 +69,15 @@ class ConnectionSummaryCommand {
           const response = await fetch(url, {method: 'Get'})
               .then((res) => res?.json())
               .catch((ex) => {
-                console.error(ex);
+                logger.error(ex);
                 return null;
               });
 
           if (response?.data?.[0]?.url) {
             imageToSend = response?.data?.[0]?.url;
           } else {
-            console.error('Giphy Invalid Response.');
-            console.error(response);
+            logger.error('Giphy Invalid Response.');
+            logger.error(response);
           }
         }
       }
@@ -96,7 +100,7 @@ class ConnectionSummaryCommand {
       guildId = discordConnectionsChannel.guildId;
       channelId = discordConnectionsChannel.id;
     } else {
-      console.error('invalid Summary command call. no interaction or channel');
+      logger.error('invalid Summary command call. no interaction or channel');
       throw new Error('Invalid Summary call');
     }
 

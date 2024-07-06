@@ -1,7 +1,12 @@
 const {SlashCommandBuilder} = require('discord.js');
 const {ConnectionGame} = require('../data/ConnectionGame');
 const config = require('config');
-const fetch = require('node-fetch-native');
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'PlayConnectionsCommand.js',
+  level: config.get('logLevel'),
+});
+const {Agent, fetch} = require('undici');
 
 const OLLAMA_CONFIG = config.get('ollama');
 
@@ -73,11 +78,10 @@ class PlayConnectionsCommand {
    * @return {String} message to send
    */
   async playGame(gameNumber, interaction) {
-    const indexColor = ['yellow, green', 'blue', 'purple'];
-    const otherGames = (await this.connectionGame.getAllPastGamesJSON(gameNumber));
+    const indexColor = ['yellow', 'green', 'blue', 'purple'];
     const gameJSON = (await this.connectionGame.getConnectionGame(gameNumber))?.jsongameinfo;
     if (!gameJSON) {
-      console.error('Game info not found.');
+      logger.error('Game info not found.');
       return;
     }
     if (OLLAMA_CONFIG.generateModel) {
@@ -96,17 +100,12 @@ class PlayConnectionsCommand {
 
         Please do not add any other text other than the 4 guesses, which are from the 4x4 game board, in each play response. Separate guesses with '--'
 
-        Here is a list of ways past games have connected items together [${otherGames.map((game) => this.getGameByCategory(game)).reduce((acc, cur) => {
-    acc = acc.concat(cur.categoryNames);
-    return acc;
-  }, []).join(', ')}]
-
          explore more connections between the words, rather than just focusing on individual word associations.
          take into account categories or themes the words actually belong to
         """`})})
           .then((res) => res.text())
           .catch((ex) => {
-            console.error(ex);
+            logger.error(ex);
             return null;
           });
     }
@@ -124,6 +123,7 @@ class PlayConnectionsCommand {
 ${this.generateGame(gameJSON)}`,
         });
 
+
     const gameByCategory = this.getGameByCategory(gameJSON);
     let playGame = true;
     let misses = 0;
@@ -132,30 +132,43 @@ ${this.generateGame(gameJSON)}`,
     let gameMessage = 'Connections\nPuzzle #' + gameNumber.toLocaleString() + '\n';
     const pastPlays = [];
     while (playGame) {
+      logger.info(messages[messages.length -1]);
       rounds++;
-      if (rounds >= 15) {
+      if (rounds >= 20) {
         break;
       }
       const url = `${OLLAMA_CONFIG.host}:${OLLAMA_CONFIG.port}/api/chat`;
-      const response = await fetch(url, {method: 'POST', body: JSON.stringify({
-        model: modelName,
-        stream: false,
-        options: {
-          seed: 123,
-          temperature: 0,
-        },
-        messages: messages,
-      })})
+      Agent;
+      const response = await fetch(url, {method: 'POST',
+        dispatcher: new Agent({connectTimeout: 86400000, bodyTimeout: 86400000, headersTimeout: 86400000, keepAliveMaxTimeout: 86400000, keepAliveTimeout: 86400000}),
+        body: JSON.stringify({
+          model: modelName,
+          stream: false,
+          options: {
+            seed: 123,
+            temperature: 0,
+          },
+          messages: messages,
+        })})
           .then((res) => res.json())
+          .then((res) => {
+            logger.info(`Response took ${res?.total_duration/60000000000} min`);
+            return res;
+          })
           .catch((ex) => {
-            console.error(ex);
+            logger.error(ex);
             playGame = false;
             return null;
           });
+      if (!response?.message) {
+        logger.error('Invalid response');
+        return;
+      }
       messages.push(response.message);
+      logger.info(messages[messages.length -1]);
 
       const currentPlay = response.message.content.split('--').map((guess) => guess.trim()).filter((guess) => !!guess).map((guess) => guess.toUpperCase());
-      console.log(currentPlay);
+      logger.info(currentPlay);
 
       if (currentPlay.length < 4) {
         messages.push({
@@ -186,7 +199,7 @@ ${this.generateGame(gameJSON)}`,
       if (invalid.length) {
         messages.push({
           role: 'user',
-          content: `Invalid Play Detected, invalid words detected (${invalid.join(', ')}) are not valid guesses, Please only respond with one guess separated by '--' with 4 entries from the game and no other info.`,
+          content: `Invalid Play Detected, invalid words detected (${invalid.join(', ')}) are not valid guesses, Valid guesses include (${Object.keys(gameByCategory.wordToIconMap).join(', ')}), Please only respond with one play separated by '--' with 4 entries from the game and no other info.`,
         });
         if (interaction) {
           await interaction.followUp({content: `Played ${rounds}. Invalid Play`, ephemeral: true});
@@ -229,13 +242,17 @@ ${this.generateGame(gameJSON)}`,
       });
       gameMessage += '\n';
       if (play.correct) {
+        currentPlay.forEach((guess) => {
+          // Remove from valid plays.
+          delete gameByCategory.wordToIconMap[guess];
+        });
         correct++;
         if (correct >= 4) {
           break;
         }
         messages.push({
           role: 'user',
-          content: `Correct, you guess the ${indexColor[play.categoryIndex]} category, which was ${play.categoryName}. Please Enter Next Guess`,
+          content: `Correct, you guessed the ${indexColor[play.categoryIndex]} category, which was ${play.categoryName}. Please Enter Next Guess`,
         });
       } else if (play.offByOne) {
         misses++;
@@ -244,7 +261,7 @@ ${this.generateGame(gameJSON)}`,
         }
         messages.push({
           role: 'user',
-          content: `Incorrect, but you are off by one. Please Enter Next Guess`,
+          content: `Incorrect, but you are off by one. Please Enter Next Guess. Try to find the guess to replace, in your last response, to get the correct answer.`,
         });
       } else {
         misses++;
@@ -281,27 +298,47 @@ ${gameByCategory.categoryContent[3].join('--')}`,
       // Invalid game.
       return '';
     }
+    logger.info(messages[messages.length -1]);
     const url = `${OLLAMA_CONFIG.host}:${OLLAMA_CONFIG.port}/api/chat`;
-    const response = await fetch(url, {method: 'POST', body: JSON.stringify({
-      model: modelName,
-      stream: false,
-      options: {
-        seed: 123,
-        temperature: 0,
-      },
-      messages: messages,
-    })})
+    const response = await fetch(url,
+        {
+          method: 'POST',
+          dispatcher: new Agent(
+              {
+                connectTimeout: 86400000,
+                bodyTimeout: 86400000,
+                headersTimeout: 86400000,
+                keepAliveMaxTimeout: 86400000,
+                keepAliveTimeout: 86400000,
+              }),
+          body: JSON.stringify(
+              {
+                model: modelName,
+                stream: false,
+                options: {
+                  seed: 123,
+                  temperature: 0,
+                },
+                messages: messages,
+                keep_alive: '10m',
+              })})
         .then((res) => res.json())
+        .then((res) => {
+          logger.info(`Response took ${res?.total_duration/60000000000} min`);
+          return res;
+        })
         .catch((ex) => {
-          console.error(ex);
+          logger.error(ex);
           playGame = false;
           return null;
         });
+    if (!response?.message) {
+      return null;
+    }
     messages.push(response.message);
-    console.log(messages);
-
+    logger.info(messages[messages.length -1]);
     await this.connectionGame.storeAIPlay(gameNumber, messages);
-    console.log(gameMessage);
+    logger.info(gameMessage);
     return gameMessage;
   }
 

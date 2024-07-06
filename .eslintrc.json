@@ -11,6 +11,7 @@
         "ecmaVersion": "latest"
     },
     "rules": {
+        "no-console": 2,
         "max-len": "off"
     }
 }

@@ -11,6 +11,16 @@ jest.mock('../../src/data/ConnectionScore', () => {
     },
   });
 });
+jest.mock('../../src/data/AIMessages', () => {
+  return ({
+    AIMessages: {
+      getInstance: jest.fn().mockReturnValue({
+        getTotalPlayers: jest.fn().mockResolvedValue([]),
+        getPlayersForGame: jest.fn().mockResolvedValue([]),
+      }),
+    },
+  });
+});
 jest.mock('../../src/data/ConnectionGame', () => {
   return ({
     ConnectionGame: {

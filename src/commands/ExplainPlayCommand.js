@@ -1,6 +1,11 @@
 const {SlashCommandBuilder} = require('discord.js');
 const {ConnectionGame} = require('../data/ConnectionGame');
 const config = require('config');
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ExplainPlayCommand.js',
+  level: config.get('logLevel'),
+});
 const fetch = require('node-fetch-native');
 
 const OLLAMA_CONFIG = config.get('ollama');
@@ -83,7 +88,6 @@ class ExplainPlayCommand {
       role: 'user',
       content: 'Explain your plays.',
     });
-    console.log(messages);
     const url = `${OLLAMA_CONFIG.host}:${OLLAMA_CONFIG.port}/api/chat`;
     const finalresponse = await fetch(url, {method: 'POST', body: JSON.stringify(
         {
@@ -97,7 +101,7 @@ class ExplainPlayCommand {
         })})
         .then((res) => res.json())
         .catch((ex) => {
-          console.error(ex);
+          logger.info(ex);
           playGame = false;
           return null;
         });

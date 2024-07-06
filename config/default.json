@@ -1,4 +1,5 @@
 {
     "autoPostHour": 22,
-    "autoPostMin": 0
+    "autoPostMin": 0,
+    "logLevel": "info"
 }

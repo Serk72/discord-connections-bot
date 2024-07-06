@@ -1,10 +1,19 @@
 const {SlashCommandBuilder, EmbedBuilder} = require('discord.js');
 const {ConnectionGame} = require('../data/ConnectionGame');
 const {ConnectionScore} = require('../data/ConnectionScore');
+const {AIMessages} = require('../data/AIMessages');
+const {Agent, fetch} = require('undici');
 const config = require('config');
-
+const bunyan = require('bunyan');
+const logger = bunyan.createLogger({
+  name: 'ConnectionsWhoLeftCommand.js',
+  level: config.get('logLevel'),
+});
 const INSULT_USERNAME = config.get('insultUserName');
+const INSULT_USER_ID = config.get('insultUserId');
 const FOOTER_MESSAGE = config.get('footerMessage');
+const OLLAMA_CONFIG = config.get('ollama');
+
 /**
  * Command for determining what players have not completed the days wordle and senda a message
  * indicated players that have not finished yet to the WORDLE_CHANNEL_ID channel.
@@ -30,6 +39,7 @@ class ConnectionsWhoLeftCommand {
   constructor() {
     this.connectionGame = ConnectionGame.getInstance();
     this.connectionScore = ConnectionScore.getInstance();
+    this.aiMessages = AIMessages.getInstance();
     this.data = ConnectionsWhoLeftCommand.data;
   }
 
@@ -49,7 +59,7 @@ class ConnectionsWhoLeftCommand {
       guildId = discordConnectionsChannel.guildId;
       channelId = discordConnectionsChannel.id;
     } else {
-      console.error('invalid WhoLeft command call. no interaction or channel');
+      logger.error('invalid WhoLeft command call. no interaction or channel');
       throw new Error('Invalid WhoLeft call');
     }
     const latestGame = await this.connectionGame.getLatestGame();
@@ -78,18 +88,10 @@ class ConnectionsWhoLeftCommand {
             .setTitle('People not done')
             .setColor('#4169e1'); // set the color of the em
       }
+      const insultMessage = await this.getAIMessage(latestGame);
       totalPlayes.filter((player) => !gamePlayers.includes(player)).forEach((player) => {
         if (player === INSULT_USERNAME) {
-          const insultMessages = [
-            `Is too lazy to complete Connections ${latestGame}`,
-            `Is holding everone else back on Connections ${latestGame}, he's the worst`,
-            `Is the worst. Complete Connections ${latestGame} already!`,
-            `Has time to edit discord names but not complete Connections ${latestGame}`,
-            `As per usual has not completed Connections ${latestGame}`,
-          ];
-          const randomIndex = Math.floor(Math.random() * 5);
-
-          embed.addFields({name: `${player}`, value: insultMessages[randomIndex]});
+          embed.addFields({name: `${player}`, value: insultMessage});
         } else {
           embed.addFields({name: `${player}`, value: `Has not completed Connections ${latestGame}`});
         }
@@ -102,6 +104,68 @@ class ConnectionsWhoLeftCommand {
       interaction.reply({embeds: [embed]});
     } else {
       await discordConnectionsChannel.send({embeds: [embed]});
+    }
+  }
+
+  /**
+   * Attempts to get an AI generated message for the insult player.
+   * @param {*} latestGame game number generated for.
+   * @return {string} An AI generated message or random hardcoded message if getting the AI message from ollama fails.
+   */
+  async getAIMessage(latestGame) {
+    let response;
+    let messages;
+    if (OLLAMA_CONFIG.generateMessages) {
+      messages = (await this.aiMessages.getMessageList('connectionsInsults')) || [];
+      messages.push({
+        role: 'user',
+        content: `Generate an insult for Connections Game ${latestGame}`,
+      });
+      const url = `${OLLAMA_CONFIG.host}:${OLLAMA_CONFIG.port}/api/chat`;
+      response = await fetch(url,
+          {
+            method: 'POST',
+            dispatcher: new Agent(
+                {
+                  connectTimeout: 86400000,
+                  bodyTimeout: 86400000,
+                  headersTimeout: 86400000,
+                  keepAliveMaxTimeout: 86400000,
+                  keepAliveTimeout: 86400000,
+                }),
+            body: JSON.stringify(
+                {
+                  model: OLLAMA_CONFIG.insultModelName,
+                  stream: false,
+                  messages: messages,
+                })})
+          .then((res) => res.json())
+          .then((res) => {
+            logger.info(`Response took ${res?.total_duration/60000000000} min`);
+            return res;
+          })
+          .catch((ex) => {
+            logger.error(ex);
+            return null;
+          });
+      messages.push(response.message);
+    }
+
+    if (response?.message?.content) {
+      await this.aiMessages.updateMessageList('connectionsInsults', messages);
+      return response.message?.content.replaceAll('[Name]', `${INSULT_USER_ID}`).replaceAll('[Player]', `${INSULT_USER_ID}`);
+    } else {
+      logger.error('Unable to generate insult.');
+      const insultMessages = [
+        `Is too lazy to complete Connections ${latestGame}`,
+        `Is holding everone else back on Connections ${latestGame}, he's the worst`,
+        `Is the worst. Complete Connections ${latestGame} already!`,
+        `Has time to edit discord names but not complete Connections ${latestGame}`,
+        `As per usual has not completed Connections ${latestGame}`,
+      ];
+      const randomIndex = Math.floor(Math.random() * 5);
+
+      return insultMessages[randomIndex];
     }
   }
 }
