@@ -50,6 +50,17 @@ class ConnectionsBotClient {
       newPlay = false;
     }
 
+    const playScore = (await this.connectionScore.getScore(message.author.username, connectionsNumber, guildId, channelId))?.score;
+
+    const reactions = this._convertScoreToEmojiList(playScore);
+
+    try {
+      await Promise.all(reactions.map((emoji) => message.react(emoji)));
+    } catch (ex) {
+      logger.error('unable to react to messaage');
+      logger.error(ex);
+    }
+
     const latestGame = await this.connectionGame.getLatestGame();
     // Only post additional messages if game played was for the latest game and not bot post.
     if (connectionsNumber === Number(latestGame) && newPlay && message.author.username !== 'Connections Bot') {
@@ -84,6 +95,44 @@ class ConnectionsBotClient {
         logger.error(solution);
       }
     }
+  }
+
+  /**
+   * Converts a score to emojis.
+   * @param {*} score the score of the play
+   * @return {*} the emojis to react with.
+   */
+  _convertScoreToEmojiList(score) {
+    const emojiArray = [];
+    switch (score) {
+      case 0:
+        emojiArray.push('0️⃣');
+        emojiArray.push(':ganon:');
+        break;
+      case 1:
+        emojiArray.push('1️⃣');
+        break;
+      case 2:
+        emojiArray.push('2️⃣');
+        break;
+      case 3:
+        emojiArray.push('3️⃣');
+        break;
+      case 4:
+        emojiArray.push('4️⃣');
+        break;
+      case 5:
+        emojiArray.push('5️⃣');
+        break;
+      case 6:
+        emojiArray.push('6️⃣');
+        emojiArray.push(':andy_ooh:');
+        break;
+      default:
+        emojiArray.push(':interrobang:');
+        break;
+    }
+    return emojiArray;
   }
   /**
    * Discord Edit Event Handler
