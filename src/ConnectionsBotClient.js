@@ -52,7 +52,7 @@ class ConnectionsBotClient {
 
     const playScore = (await this.connectionScore.getScore(message.author.username, connectionsNumber, guildId, channelId))?.score;
 
-    const reactions = this._convertScoreToEmojiList(playScore);
+    const reactions = this._convertScoreToEmojiList(playScore, message);
 
     try {
       await Promise.all(reactions.map((emoji) => message.react(emoji)));
@@ -100,14 +100,21 @@ class ConnectionsBotClient {
   /**
    * Converts a score to emojis.
    * @param {*} score the score of the play
+   * @param {*} message message to add emoji too.
    * @return {*} the emojis to react with.
    */
-  _convertScoreToEmojiList(score) {
+  _convertScoreToEmojiList(score, message) {
     const emojiArray = [];
     switch (score) {
       case 0:
         emojiArray.push('0️⃣');
-        emojiArray.push(':ganon:');
+        const reactionEmoji = message.guild.emojis.cache.find((emoji) => emoji.name === 'ganon');
+        if (reactionEmoji) {
+          emojiArray.push(reactionEmoji);
+        } else {
+          emojiArray.push('📉');
+        }
+
         break;
       case 1:
         emojiArray.push('1️⃣');
@@ -126,10 +133,15 @@ class ConnectionsBotClient {
         break;
       case 6:
         emojiArray.push('6️⃣');
-        emojiArray.push(':andy_ooh:');
+        const reactionEmoji2 = message.guild.emojis.cache.find((emoji) => emoji.name === 'andy_ooh');
+        if (reactionEmoji2) {
+          emojiArray.push(reactionEmoji2);
+        } else {
+          emojiArray.push('🥳');
+        }
         break;
       default:
-        emojiArray.push(':interrobang:');
+        emojiArray.push('⁉️');
         break;
     }
     return emojiArray;

@@ -172,8 +172,9 @@ Puzzle #342
           score += 1;
           break;
         case 6:
-          score = 3;
+          score = 4;
         default:
+          score = 3;
           break;
       }
     }
