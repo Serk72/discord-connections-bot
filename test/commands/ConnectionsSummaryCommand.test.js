@@ -94,7 +94,7 @@ describe('SummaryCommand Tests', () => {
       category1: 'tests',
     });
     await summaryCommand.execute(null, mockedDiscordChannel);
-    expect(mockedDiscordChannel.send).toBeCalledWith({content: `\`\`\`
+    expect(mockedDiscordChannel.send).toBeCalledWith(`\`\`\`
 .----------------------.
 | Connections Summary  |
 |----------------------|
@@ -105,7 +105,7 @@ describe('SummaryCommand Tests', () => {
 ***Overall Leader: test***
 **7 Day Leader: undefined**
 **Today's Winners: undefined**
-    *Brought to you by ...*`, files: [{attachment: 'someUrl', name: 'SPOILER_FILE.gif'}]});
+    *Brought to you by ...*`);
   });
   test('summary with results Channel with giphy link error', async () => {
     fetch.mockResolvedValueOnce(new Error());

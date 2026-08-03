@@ -73,8 +73,8 @@ class ConnectionSummaryCommand {
                 return null;
               });
 
-          if (response?.data?.[0]?.url) {
-            imageToSend = response?.data?.[0]?.url;
+          if (response?.data?.[0]?.images?.downsized?.url) {
+            imageToSend = response?.data?.[0]?.images?.downsized?.url;
           } else {
             logger.error('Giphy Invalid Response.');
             logger.error(response);

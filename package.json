@@ -3,13 +3,13 @@
   "dependencies": {
     "ascii-table": "0.0.9",
     "bunyan": "1.8.15",
-    "config": "3.3.11",
-    "dayjs": "1.11.11",
-    "discord.js": "14.15.2",
+    "config": "3.3.12",
+    "dayjs": "1.11.13",
+    "discord.js": "14.16.1",
     "ml-regression": "5.0.0",
     "node-fetch-native": "1.6.4",
-    "pg": "8.11.5",
-    "undici": "6.19.2"
+    "pg": "8.12.0",
+    "undici": "6.19.8"
   },
   "devDependencies": {
     "eslint": "8.57.0",

@@ -145,8 +145,8 @@ ${this.generateGame(gameJSON)}`,
           model: modelName,
           stream: false,
           options: {
-            seed: 123,
-            temperature: 0,
+            seed: Math.floor(Math.random() * 500),
+            temperature: Math.floor(Math.random() * 5),
           },
           messages: messages,
         })})
@@ -166,14 +166,15 @@ ${this.generateGame(gameJSON)}`,
       }
       messages.push(response.message);
       logger.info(messages[messages.length -1]);
+      const messageContent = response.message.content.replaceAll(/\n/g, '').replace(/<think>.*<\/think>/, '');
 
-      const currentPlay = response.message.content.split('--').map((guess) => guess.trim()).filter((guess) => !!guess).map((guess) => guess.toUpperCase());
+      const currentPlay = messageContent.split('--').map((guess) => guess.trim()).filter((guess) => !!guess).map((guess) => guess.toUpperCase());
       logger.info(currentPlay);
 
       if (currentPlay.length < 4) {
         messages.push({
           role: 'user',
-          content: `Invalid Play Detected, not enough items, Please only respond with one guess separated by '--' with 4 entries from the game and no other info.`,
+          content: `Invalid Play Detected, not enough items, Please only respond with one guess separated by '--' with 4 entries from the game and no other info. Detected play had ${currentPlay.length} guesses, 4 gueses are what is valid. the detected play was '${currentPlay.join('--')}' `,
         });
         if (interaction) {
           await interaction.followUp({content: `Played ${rounds}. Invalid Play`, ephemeral: true});
@@ -183,7 +184,7 @@ ${this.generateGame(gameJSON)}`,
       if (currentPlay.length > 4) {
         messages.push({
           role: 'user',
-          content: `Invalid Play Detected, too many items, Please only respond with one guess separated by '--' with 4 entries from the game and no other info.`,
+          content: `Invalid Play Detected, too many items, Please only respond with one guess separated by '--' with 4 entries from the game and no other info. . Detected play had ${currentPlay.length} guesses, 4 gueses are what is valid. the detected play was '${currentPlay.join('--')}' `,
         });
         if (interaction) {
           await interaction.followUp({content: `Played ${rounds}. Invalid Play`, ephemeral: true});
@@ -261,7 +262,7 @@ ${this.generateGame(gameJSON)}`,
         }
         messages.push({
           role: 'user',
-          content: `Incorrect, but you are off by one. Please Enter Next Guess. Try to find the guess to replace, in your last response, to get the correct answer.`,
+          content: `Valid Play detected, Incorrect guess, but you are off by one. Please Enter Next Guess. Try to find the guess to replace, in your last response, to get the correct answer.`,
         });
       } else {
         misses++;
@@ -271,7 +272,7 @@ ${this.generateGame(gameJSON)}`,
 
         messages.push({
           role: 'user',
-          content: `Incorrect. Please Enter Next Guess`,
+          content: `Valid Play detected, Incorrect guess. Please Enter Next Guess`,
         });
       }
     }
